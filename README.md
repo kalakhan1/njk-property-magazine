@@ -1,0 +1,1 @@
+# njk-property-magazine
