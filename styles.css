@@ -1,0 +1,66 @@
+/* styles.css - global light-blue theme, responsive helpers */
+:root{
+  --njk-blue: #004d99;
+  --njk-light: #e6f4ff;
+  --njk-accent: #66a3ff;
+  --card-bg: #ffffff;
+  --muted: #5b6b7a;
+}
+
+*{box-sizing:border-box}
+body{
+  font-family: Inter, system-ui, Arial, sans-serif;
+  background: var(--njk-light);
+  color: var(--njk-blue);
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+header.site-header{
+  background: linear-gradient(90deg,var(--njk-blue),var(--njk-accent));
+  color:white;
+  padding:18px 12px;
+  text-align:center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.header-title{font-size:20px;font-weight:700}
+.header-sub{font-size:13px;opacity:.95}
+
+.container{max-width:1100px;margin:0 auto;padding:18px}
+
+/* cards */
+.card{
+  background:var(--card-bg);
+  border-radius:12px;
+  box-shadow: 0 6px 18px rgba(15,26,60,0.06);
+  padding:16px;
+}
+
+/* buttons */
+.btn-primary{background:var(--njk-blue);border:none;color:white;padding:10px 14px;border-radius:8px}
+.btn-outline-primary{background:transparent;border:1px solid var(--njk-blue);color:var(--njk-blue);padding:8px;border-radius:8px}
+.btn-danger{background:#e05454;border:none;color:white;padding:8px;border-radius:8px}
+
+/* responsive grid helpers */
+.row{display:flex;flex-wrap:wrap;margin:-8px}
+.col{padding:8px;flex:1 1 0%}
+.col-3{flex:0 0 25%;max-width:25%}
+.col-4{flex:0 0 33.3333%;max-width:33.3333%}
+.col-6{flex:0 0 50%;max-width:50%}
+.col-9{flex:0 0 75%;max-width:75%}
+
+/* small screens */
+@media (max-width:900px){
+  .col-3,.col-4,.col-6,.col-9{flex:0 0 100%;max-width:100%}
+}
+
+/* simple input styles */
+input[type="text"],input[type="number"],input[type="email"],select,textarea{
+  width:100%;padding:10px;border:1px solid #d6e9ff;border-radius:8px;margin-top:6px;
+}
+label{font-weight:600;font-size:13px;color:var(--njk-blue)}
+
+/* footer */
+footer.site-footer{background:var(--njk-blue);color:white;padding:12px;text-align:center;margin-top:18px;border-top-left-radius:6px;border-top-right-radius:6px}
+.small-muted{color:var(--muted);font-size:13px}

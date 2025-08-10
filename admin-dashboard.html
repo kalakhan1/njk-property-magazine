@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Dashboard — NJK</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-title">NJK Property Magazine — Admin</div>
+    <div class="header-sub">Manage listings & user requests</div>
+  </header>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-3">
+        <div class="card">
+          <h4>Admin</h4>
+          <a href="/submit-property.html" class="btn-primary" style="display:block;text-align:center">Create Post</a>
+          <button id="showRequests" class="btn-outline-primary" style="width:100%;margin-top:8px">Limit Requests</button>
+          <button id="manageLimits" class="btn-outline-primary" style="width:100%;margin-top:8px">Manage User Limits</button>
+          <button id="logoutBtn" class="btn-outline-primary" style="width:100%;margin-top:8px">Logout</button>
+        </div>
+      </div>
+
+      <div class="col-9">
+        <div class="card">
+          <h4>All Properties</h4>
+          <div id="allProps"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal-like simple area -->
+  <div id="modal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:9999">
+    <div style="background:white;padding:16px;border-radius:10px;max-width:720px;width:90%">
+      <div id="modalBody"></div>
+      <div style="margin-top:12px;text-align:right"><button onclick="closeModal()" class="btn-outline-primary">Close</button></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">Project by NJK REAL ESTATE</footer>
+
+  <script src="app.js"></script>
+  <script>
+    const tok = requireAuth();
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') { alert("Admin access only"); window.location = "/auth.html"; }
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('showRequests').addEventListener('click', showRequests);
+
+    async function loadAllProps() {
+      const res = await api("listProperties", { page:1, pageSize:1000 }); // admin see all
+      const box = document.getElementById('allProps'); box.innerHTML = "";
+      if (!res || !res.items || res.items.length===0) { box.innerHTML = "<p>No properties</p>"; return; }
+      res.items.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '8px';
+        el.innerHTML = `<h5 style="margin:0">${p.Title}</h5>
+          <div class="small-muted">${p.Type} • ${p.Purpose} • by ${p.UserID}</div>
+          <p style="margin-top:8px">${(p.Description||'').slice(0,200)}</p>
+          <div style="display:flex;gap:8px">
+            <a class="btn-outline-primary" href="/submit-property.html?id=${p.ID}">Edit</a>
+            <button class="btn-danger" onclick="adminDelete('${p.ID}')">Delete</button>
+          </div>`;
+        box.appendChild(el);
+      });
+    }
+
+    async function adminDelete(id) {
+      if (!confirm("Delete this property?")) return;
+      const res = await api("deleteProperty", { id, tokenId: tok });
+      if (res.status === "success") { showMsg("Deleted"); loadAllProps(); }
+      else showMsg(res.message || "Delete failed", true);
+    }
+
+    async function showRequests(){
+      const res = await api("listLimitRequests", {});
+      if (!res || !res.length) { showModal("<p>No requests</p>"); return; }
+      let html = "<h4>Limit Requests</h4>";
+      res.forEach(r => {
+        html += `<div style="border-bottom:1px solid #eee;padding:8px 0">
+          <b>User:</b> ${r.UserID} <br>
+          <b>Requested:</b> ${r.RequestedLimit} <br>
+          <b>Status:</b> ${r.Status} <br>
+          <div style="margin-top:6px">
+            <button class="btn-primary" onclick="approveRequest('${r.ID}','${r.UserID}',${r.RequestedLimit})">Approve</button>
+            <button class="btn-danger" onclick="rejectRequest('${r.ID}')">Reject</button>
+          </div>
+        </div>`;
+      });
+      showModal(html);
+    }
+
+    async function approveRequest(id, userId, requestedLimit) {
+      // set user limit
+      await api("setUserLimit", { userId, limitType: "maxPosts", value: requestedLimit });
+      await api("updateLimitRequest", { id, status: "approved", adminNote: `Approved by ${currentUser.id}` });
+      showMsg("Approved");
+      closeModal();
+    }
+    async function rejectRequest(id) {
+      await api("updateLimitRequest", { id, status: "rejected", adminNote: `Rejected by ${currentUser.id}` });
+      showMsg("Rejected");
+      closeModal();
+    }
+
+    function showModal(html) {
+      document.getElementById('modalBody').innerHTML = html;
+      document.getElementById('modal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    loadAllProps();
+  </script>
+</body>
+</html>
+

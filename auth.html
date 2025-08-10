@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login — NJK Property</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-title">NJK Property Magazine</div>
+    <div class="header-sub">Login or Register</div>
+  </header>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-6">
+        <div class="card">
+          <h4>Login</h4>
+          <form id="loginForm">
+            <label>Email</label><input type="email" name="email" required>
+            <label style="margin-top:8px">Password</label><input type="password" name="password" required>
+            <div style="margin-top:12px">
+              <button class="btn-primary">Login</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="card">
+          <h4>Create Account</h4>
+          <form id="regForm">
+            <label>Name</label><input name="name" required>
+            <label style="margin-top:8px">Email</label><input name="email" type="email" required>
+            <label style="margin-top:8px">Phone</label><input name="phone" type="text">
+            <label style="margin-top:8px">Password</label><input name="password" type="password" required>
+            <div style="margin-top:12px">
+              <button class="btn-outline-primary">Register</button>
+            </div>
+          </form>
+          <div class="small-muted" style="margin-top:8px">After register you'll be logged in and redirected to your dashboard.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">Project by NJK REAL ESTATE</footer>
+
+  <script src="app.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const f = e.target;
+      const res = await login(f.email.value, f.password.value);
+      if (res.status === "success") {
+        const role = res.user.role;
+        if (role === "admin") window.location = "/admin-dashboard.html";
+        else window.location = "/user-dashboard.html";
+      } else showMsg(res.message || "Login failed", true);
+    });
+
+    document.getElementById('regForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const f = e.target;
+      const res = await api("createUser", { name: f.name.value, email: f.email.value, phone: f.phone.value, password: f.password.value });
+      if (res.status === "success") {
+        // server returns password in res.password sometimes; we then auto-login
+        const loginRes = await login(f.email.value, f.password.value);
+        if (loginRes.status === "success") {
+          window.location = "/user-dashboard.html";
+        } else {
+          showMsg("Registered but login failed", true);
+        }
+      } else {
+        showMsg(res.message || "Register failed", true);
+      }
+    });
+  </script>
+</body>
+</html>

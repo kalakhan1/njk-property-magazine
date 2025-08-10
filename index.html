@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NJK Property Magazine</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-title">NJK Property Magazine</div>
+    <div class="header-sub">Project by NJK REAL ESTATE</div>
+  </header>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-3">
+        <div class="card">
+          <h4>Filters</h4>
+          <label>Type</label>
+          <select id="fType"><option value="">All</option><option>Plot</option><option>Bungalow</option><option>Flat/Portion</option><option>Shop</option><option>Basement</option><option>Office</option></select>
+
+          <label style="margin-top:8px">Purpose</label>
+          <select id="fPurpose"><option value="">All</option><option>Rent</option><option>Sale</option></select>
+
+          <label style="margin-top:8px">Min Price</label>
+          <input id="fMin" type="number" placeholder="0">
+
+          <label style="margin-top:8px">Max Price</label>
+          <input id="fMax" type="number" placeholder="">
+
+          <label style="margin-top:8px">Search</label>
+          <input id="fQ" type="text" placeholder="Title or description">
+
+          <div style="margin-top:12px">
+            <button class="btn-primary" id="applyFilters">Apply</button>
+            <button class="btn-outline-primary" id="clearFilters" style="margin-left:8px">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-9">
+        <div class="card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+          <div><h3 style="margin:0">Latest Properties</h3><div class="small-muted">Browse & filter listings</div></div>
+          <div>
+            <a href="/auth.html" class="btn-outline-primary" style="margin-right:8px">Login / Register</a>
+            <a href="/submit-property.html" class="btn-primary">Submit Property</a>
+          </div>
+        </div>
+
+        <div id="listings"></div>
+
+        <div id="pagination" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">Project by NJK REAL ESTATE</footer>
+
+  <!-- scripts -->
+  <script src="app.js"></script>
+  <script>
+    // initial load
+    let currentPage = 1;
+    const pageSize = 10;
+
+    async function loadListings(page=1) {
+      const filters = { page, pageSize };
+      const type = document.getElementById('fType').value;
+      const purpose = document.getElementById('fPurpose').value;
+      const min = document.getElementById('fMin').value;
+      const max = document.getElementById('fMax').value;
+      const q = document.getElementById('fQ').value;
+      if (type) filters.type = type;
+      if (purpose) filters.purpose = purpose;
+      if (min) filters.minPrice = min;
+      if (max) filters.maxPrice = max;
+      if (q) filters.q = q;
+
+      const res = await api("listProperties", filters);
+      const container = document.getElementById('listings');
+      container.innerHTML = "";
+
+      if (!res || !res.items || res.items.length === 0) {
+        container.innerHTML = '<div class="card"><p>No properties found.</p></div>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      res.items.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'card';
+        d.style.marginBottom = '12px';
+        d.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:140px;height:100px;background:#f2f8ff;border-radius:8px;display:flex;align-items:center;justify-content:center">
+              ${p.ImageUrl ? `<img src="${p.ImageUrl}" style="max-width:100%;max-height:100%;border-radius:6px" />` : '<span class="small-muted">No image</span>'}
+            </div>
+            <div style="flex:1">
+              <h4 style="margin:0">${p.Title || 'Untitled'}</h4>
+              <div class="small-muted" style="margin-top:6px">${p.Type} • ${p.Purpose} • ${p.Location || p.LocationInput || ''}</div>
+              <p style="margin:8px 0">${(p.Description || '').slice(0,220)}</p>
+              <div style="display:flex;gap:8px;align-items:center">
+                <div><strong>PKR ${p.Price || 'N/A'}</strong></div>
+                <div class="small-muted">Area: ${p.AreaValue || '-'} ${p.AreaUnit || ''}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(d);
+      });
+
+      // pagination
+      const total = res.total || 0;
+      const totalPages = Math.ceil(total / pageSize);
+      let paginationHtml = `<div class="card" style="display:flex;gap:8px;align-items:center">`;
+      paginationHtml += `<div class="small-muted" style="flex:1">Page ${res.page} of ${totalPages} — ${total} results</div>`;
+      paginationHtml += `<div>`;
+      if (res.page > 1) paginationHtml += `<button class="btn-outline-primary" onclick="goPage(${res.page-1})">Prev</button>`;
+      if (res.page < totalPages) paginationHtml += `<button class="btn-primary" onclick="goPage(${res.page+1})" style="margin-left:8px">Next</button>`;
+      paginationHtml += `</div></div>`;
+      document.getElementById('pagination').innerHTML = paginationHtml;
+    }
+
+    function goPage(p) { currentPage = p; loadListings(p); }
+
+    document.getElementById('applyFilters').addEventListener('click', ()=> { loadListings(1); });
+    document.getElementById('clearFilters').addEventListener('click', ()=> {
+      document.getElementById('fType').value = "";
+      document.getElementById('fPurpose').value = "";
+      document.getElementById('fMin').value = "";
+      document.getElementById('fMax').value = "";
+      document.getElementById('fQ').value = "";
+      loadListings(1);
+    });
+
+    loadListings(1);
+  </script>
+</body>
+</html>

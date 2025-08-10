@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Submit Property — NJK</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-title">NJK Property Magazine</div>
+    <div class="header-sub">Submit or edit property</div>
+  </header>
+
+  <div class="container">
+    <div class="card" style="max-width:980px;margin:0 auto">
+      <h3 id="formTitle">Submit New Property</h3>
+      <form id="propertyForm">
+        <input type="hidden" name="id" id="propId">
+        <div class="row">
+          <div class="col-6">
+            <label>Title</label><input name="title" required>
+          </div>
+          <div class="col-6">
+            <label>Price</label><input name="price" type="number" required>
+          </div>
+          <div class="col-6">
+            <label>Type</label>
+            <select name="type"><option>Plot</option><option>Bungalow</option><option>Flat/Portion</option><option>Shop</option><option>Basement</option><option>Office</option></select>
+          </div>
+          <div class="col-6">
+            <label>Purpose</label>
+            <select name="purpose"><option>Rent</option><option>Sale</option></select>
+          </div>
+          <div class="col-6">
+            <label>Area Unit</label><select name="areaUnit"><option>SQFT</option><option>SQYDS</option></select>
+          </div>
+          <div class="col-6">
+            <label>Area Value</label><input name="areaValue" type="number">
+          </div>
+          <div class="col-12">
+            <label>Description</label><textarea name="description" rows="4"></textarea>
+          </div>
+          <div class="col-6">
+            <label>Agency</label><input name="agency">
+          </div>
+          <div class="col-6">
+            <label>Agent</label><input name="agent">
+          </div>
+          <div class="col-6">
+            <label>Contact</label><input name="contact">
+          </div>
+          <div class="col-6">
+            <label>Location (Phase/Block/Sector)</label><input name="locationInput">
+          </div>
+
+          <div class="col-6">
+            <label>Image (optional)</label>
+            <input id="imageInput" type="file" accept="image/*">
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <button class="btn-primary" id="submitBtn">Submit</button>
+          <a href="/" style="margin-left:8px" class="btn-outline-primary">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="site-footer">Project by NJK REAL ESTATE</footer>
+
+  <script src="app.js"></script>
+  <script>
+    // load property if id present
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('id');
+    if (editId) {
+      document.getElementById('formTitle').innerText = "Edit Property";
+      // fetch property
+      api("getProperty", { id: editId }).then(res => {
+        if (res) {
+          document.getElementById('propId').value = res.ID || "";
+          const f = document.getElementById('propertyForm');
+          f.title.value = res.Title || "";
+          f.price.value = res.Price || "";
+          f.type.value = res.Type || "";
+          f.purpose.value = res.Purpose || "";
+          f.areaUnit.value = res.AreaUnit || "";
+          f.areaValue.value = res.AreaValue || "";
+          f.description.value = res.Description || "";
+          f.agency.value = res.Agency || "";
+          f.agent.value = res.Agent || "";
+          f.contact.value = res.Contact || "";
+          f.locationInput.value = res.LocationInput || "";
+        }
+      }).catch(err => console.error(err));
+    }
+
+    document.getElementById('propertyForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const token = requireAuth(); if (!token) return;
+      const f = e.target;
+      const payload = {
+        title: f.title.value,
+        price: f.price.value,
+        type: f.type.value,
+        purpose: f.purpose.value,
+        areaUnit: f.areaUnit.value,
+        areaValue: f.areaValue.value,
+        description: f.description.value,
+        agency: f.agency.value,
+        agent: f.agent.value,
+        contact: f.contact.value,
+        locationInput: f.locationInput.value,
+        tokenId: token
+      };
+
+      const file = document.getElementById('imageInput').files[0];
+      if (file) {
+        try {
+          const dataUrl = await fileToDataURL(file);
+          payload.imageData = dataUrl;
+        } catch (err) { console.error(err); }
+      }
+
+      if (f.id && f.id.value) {
+        payload.id = f.id.value;
+        const res = await api("updateProperty", payload);
+        if (res.status === "success") { showMsg("Updated"); window.location = "/user-dashboard.html"; }
+        else showMsg(res.message || "Update failed", true);
+      } else {
+        const res = await api("addProperty", payload);
+        if (res.status === "success") { showMsg("Property submitted"); clearForm(f); }
+        else showMsg(res.message || "Submit failed", true);
+      }
+    });
+  </script>
+</body>
+</html>
+

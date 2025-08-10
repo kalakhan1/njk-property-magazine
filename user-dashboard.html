@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>User Dashboard — NJK</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-title">NJK Property Magazine — User Dashboard</div>
+    <div class="header-sub">Manage your properties</div>
+  </header>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-3">
+        <div class="card">
+          <h4>Actions</h4>
+          <a href="/submit-property.html" class="btn-primary" style="display:block;text-align:center">New Property</a>
+          <button id="reqBtn" class="btn-outline-primary" style="width:100%;margin-top:8px">Request Limit Increase</button>
+          <button id="logout" class="btn-outline-primary" style="width:100%;margin-top:8px">Logout</button>
+        </div>
+      </div>
+
+      <div class="col-9">
+        <div class="card">
+          <h4>Your Properties</h4>
+          <div id="myProps"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">Project by NJK REAL ESTATE</footer>
+
+  <script src="app.js"></script>
+  <script>
+    const token = requireAuth();
+    document.getElementById('logout').addEventListener('click', logout);
+
+    async function loadUserProperties() {
+      const u = getCurrentUser();
+      if (!u) { window.location = "/auth.html"; return; }
+      const res = await api("listProperties", { userId: u.id });
+      const box = document.getElementById('myProps'); box.innerHTML = "";
+      if (!res || !res.items || res.items.length===0) { box.innerHTML = "<p>No posts yet.</p>"; return; }
+      res.items.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '10px';
+        el.innerHTML = `<h5 style="margin:0">${p.Title || 'Untitled'}</h5>
+          <div class="small-muted">${p.Type} • ${p.Purpose}</div>
+          <p style="margin-top:8px">${(p.Description||'').slice(0,200)}</p>
+          <div style="display:flex;gap:8px">
+            <a class="btn-outline-primary" href="/submit-property.html?id=${p.ID}">Edit</a>
+            <button class="btn-danger" onclick="del('${p.ID}')">Delete</button>
+          </div>`;
+        box.appendChild(el);
+      });
+    }
+
+    async function del(id){
+      if (!confirm("Delete this post?")) return;
+      const res = await api("deleteProperty", { id, tokenId: token });
+      if (res.status === "success") { showMsg("Deleted"); loadUserProperties(); }
+      else showMsg(res.message || "Delete failed", true);
+    }
+
+    document.getElementById('reqBtn').addEventListener('click', async ()=>{
+      const u = getCurrentUser();
+      if (!u) return;
+      const requested = prompt("Enter requested maximum posts (e.g. 10):");
+      if (!requested) return;
+      const res = await api("requestLimitIncrease", { userId: u.id, requestedLimit: requested });
+      if (res.status === "success") showMsg("Request submitted");
+      else showMsg(res.message || "Request failed", true);
+    });
+
+    loadUserProperties();
+  </script>
+</body>
+</html>
